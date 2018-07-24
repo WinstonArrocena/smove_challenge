@@ -2,7 +2,6 @@
 #include <Wire.h>
 
 #define SLAVE_ADDR 	0x48
-#define BAUD_RATE	9600
 #define RELAY1		3
 #define RELAY2		5
 #define RPI_POWER_CTRL	7
@@ -18,7 +17,6 @@ void setup() {
   
   Wire.begin(SLAVE_ADDR);                // join i2c bus with address #8
   Wire.onReceive(receiveEvent); // register event
-  Serial.begin(BAUD_RATE);           // start serial for output
 }
 
 void loop() {
@@ -46,16 +44,14 @@ void receiveEvent(int num) {
   while (Wire.available()) { 
     flag = 1;
     char c = Wire.read(); // receive byte as a character
-    Serial.println(c, HEX);         // print the char
     switch(c){
       case 0xFE: //read fuel sensor
       int rawValue;
       rawValue = analogRead(FUEL_SENSOR); 
-      byte buffer[2];
-      buffer[0] = rawValue >> 8;
-      buffer[1] = rawValue & 0xFF;
-      // ?? need to test here, not very sure how this works in arduino
-      Wire.write(buffer, 2); // sends buffer
+      high_byte = rawValue >> 8;
+	  Wire.write(high_byte); // sends high_byte
+      low_byte = rawValue & 0xFF;
+      Wire.write(low_byte); // sends low_byte
       break;
       case 0xA1: //on relay 1
         digitalWrite(RELAY1, HIGH);       // sets the digital pin 3 on

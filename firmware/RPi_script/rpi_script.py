@@ -1,5 +1,7 @@
+#Disclaimer: this code is not tested, may not work, just for the purposes of this exercise
 import serial
 import smbus
+import threading
 import time
 
 bus = smbus.SMBus(1)
@@ -13,6 +15,19 @@ sp = serial.Serial(
         bytesize=serial.EIGHTBITS,
         timeout=1
 )
+
+def check_fuel_sensor():
+	sp.write("^OK\r\n" )
+	bus.write_byte(arduino_addr,0xFE) 
+	high_byte = bus.read_byte(arduino_addr)
+	low_byte = bus.read_byte(arduino_addr)
+	sensor_value = (high_byte<<8) | low_byte
+	sp.write(str(sensor_value))
+	sp.write("\r\n" )
+	
+fuel_sensor_thread = threading.Timer(1, check_fuel_sensor)
+fuel_sensor_thread.start()
+
 sp.write("^RESET\r\n" )
 while True:
     rcv = sp.readline()
@@ -30,7 +45,11 @@ while True:
 		bus.write_byte(arduino_addr,0xB0)
 	elif rcv == "AT+SENS=?\r\n":
 		sp.write("^OK\r\n" )
-		bus.write_byte(arduino_addr,0xFE)
-		
+		bus.write_byte(arduino_addr,0xFE) 
+		high_byte = bus.read_byte(arduino_addr)
+		low_byte = bus.read_byte(arduino_addr)
+		sensor_value = (high_byte<<8) | low_byte
+		sp.write(str(sensor_value))
+		sp.write("\r\n" )
 	else:
 		sp.write("^ERROR: Invalid command\r\n" )
